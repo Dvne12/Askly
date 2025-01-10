@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Askly</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+
+        .chat-container {
+            width: 100%;
+            max-width: 900px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-header {
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .chat-header h1 {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .chat-header p {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+            margin-top: 4px;
+        }
+
+        .chat-icon {
+            background: rgba(255, 255, 255, 0.2);
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .chat-icon svg {
+            width: 24px;
+            height: 24px;
+            color: white;
+        }
+
+        .chatbot-body {
+            height: 400px;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message {
+            max-width: 80%;
+            margin-bottom: 10px;
+            align-self: flex-start;
+            display: flex;
+            align-items: flex-end;
+        }
+
+        .message.user {
+            align-self: flex-end;
+        }
+
+        .message-bubble {
+            padding: 10px 15px;
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            font-size: 0.9rem;
+        }
+
+        .message.user .message-bubble {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .message-logo {
+            width: 40px;  /* Larger size */
+            height: 40px; /* Larger size */
+            margin-right: 8px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .message-logo img {
+            width: 28px;  /* Larger image size */
+            height: 28px; /* Larger image size */
+        }
+
+        .error-message {
+            align-self: center;
+            color: #ff6b6b;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px 15px;
+            border-radius: 18px;
+            margin-bottom: 10px;
+        }
+
+        .chatbot-footer {
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            gap: 10px;
+        }
+
+        .chatbot-footer input {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .chatbot-footer input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .chatbot-footer input:focus {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .chatbot-footer button {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            width: 46px;
+            height: 46px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: white;
+            font-size: 1.5rem;
+        }
+
+        .chatbot-footer button:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <div class="chat-icon">
+                <img src="logo.png" alt="AI Chatbot Logo" style="width: 50px; height: 50px; border-radius: 12px;">
+            </div>
+            <div>
+                <h1>Askly</h1>
+                <p>Send a message to start chatting</p>
+            </div>
+        </div>
+        <div class="chatbot-body" id="chatBody">
+            <div class="message bot">
+            </div>
+        </div>
+        <div class="chatbot-footer">
+            <input type="text" id="userInput" placeholder="Type your message...">
+            <button onclick="sendMessage()">&#10148;</button>
+        </div>
+    </div>
+
+    <script>
+        // Store API configuration in a separate object
+        const config = {
+            apiUrl: 'https://api-inference.huggingface.co/models/google/flan-t5-large',
+            headers: {
+                'Authorization': 'Bearer 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', // Use Bearer token format
+                'Content-Type': 'application/json'
+            }
+        };
+
+        let isFirstMessage = true;
+
+        function addMessage(content, sender) {
+            const chatBody = document.getElementById("chatBody");
+            const message = document.createElement("div");
+            message.className = `message ${sender}`;
+
+            if (sender === 'bot') {
+                const logo = document.createElement("div");
+                logo.className = "message-logo";
+                const img = document.createElement("img");
+                img.src = "logo.png";  // Ensure logo image is available in the same folder
+                img.alt = "AI Chatbot Logo";
+                logo.appendChild(img);
+                message.appendChild(logo);
+            }
+
+            const bubble = document.createElement("div");
+            bubble.className = "message-bubble";
+            bubble.textContent = content;
+
+            message.appendChild(bubble);
+            chatBody.appendChild(message);
+            chatBody.scrollTop = chatBody.scrollHeight; // Keep scroll at the bottom
+        }
+
+        function displayErrorMessage(error) {
+            const chatBody = document.getElementById("chatBody");
+            const errorMessage = document.createElement("div");
+            errorMessage.className = "error-message";
+            errorMessage.textContent = error;
+            chatBody.appendChild(errorMessage);
+            chatBody.scrollTop = chatBody.scrollHeight; // Keep scroll at the bottom
+        }
+
+        function sendMessage() {
+            const userInput = document.getElementById("userInput").value.trim();
+            if (!userInput) return;
+
+            if (isFirstMessage) {
+                // Clear the chat body before displaying the bot's greeting
+                document.getElementById("chatBody").innerHTML = '';
+                isFirstMessage = false;
+            }
+
+            addMessage(userInput, "user");
+            document.getElementById("userInput").value = "";
+
+            // Call the Hugging Face API
+            fetch(config.apiUrl, {
+                method: 'POST',
+                headers: config.headers,
+                body: JSON.stringify({
+                    inputs: userInput // Fix the structure
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    displayErrorMessage("API Error: " + data.error);
+                } else {
+                    const botResponse = data[0]?.generated_text || "Sorry, I couldn't understand that.";
+                    addMessage(botResponse, "bot");
+                }
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                displayErrorMessage("An error occurred while communicating with the server.");
+            });
+        }
+
+        // Trigger sendMessage on Enter key press
+        document.getElementById("userInput").addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>
